@@ -1,0 +1,22 @@
+﻿@inject NavigationManager Navigation
+
+<MudPaper Width="240px" Elevation="0" Class="py-3 d-flex flex-column justify-space-between" Height="100vh">
+    <MudNavMenu Color="Color.Primary" Bordered="true">
+        <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+        <MudNavLink Href="/users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Person">Users</MudNavLink>
+        <MudNavGroup Title="Warehouse" Expanded="false" Icon="@Icons.Material.Filled.Storage">
+            <MudNavLink Href="/products" Match="NavLinkMatch.Prefix">Products</MudNavLink>
+            <MudNavLink Href="/orders" Match="NavLinkMatch.Prefix">Orders</MudNavLink>
+        </MudNavGroup>
+    </MudNavMenu>
+
+    <MudNavMenu Color="Color.Primary" Bordered="true" Margin="Margin.Dense">
+        <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
+        <MudNavLink Href="/about" Icon="@Icons.Material.Filled.Info">About</MudNavLink>
+        <MudNavLink Href="/logout" Icon="@Icons.Material.Filled.Logout">Logout</MudNavLink>
+    </MudNavMenu>
+</MudPaper>
+
+@code {
+
+}

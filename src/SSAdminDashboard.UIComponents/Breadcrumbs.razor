@@ -1,0 +1,9 @@
+﻿<div class="mb-8 p-0">
+    <MudBreadcrumbs Items="Items" Separator=">"></MudBreadcrumbs>
+    <MudDivider />
+</div>
+
+@code {
+    [Parameter]
+    public List<BreadcrumbItem> Items { get; set; } = new();
+}

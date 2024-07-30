@@ -1,0 +1,23 @@
+﻿@page "/logout"
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@inject IHttpContextAccessor httpContextAccessor
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (this.httpContextAccessor?.HttpContext is not null)
+        {
+            // sign-out from the default authentication scheme
+            await this.httpContextAccessor.HttpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme, new AuthenticationProperties
+            {
+                RedirectUri = "/error/403"
+            });
+
+            // sign-out from the cookie authentication scheme
+            await this.httpContextAccessor.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+    }
+}

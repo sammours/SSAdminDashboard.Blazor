@@ -1,0 +1,85 @@
+﻿@page "/users/{id:guid}"
+@inherits CancellableComponent;
+
+@using SSAdminDashboard.Domain.Users
+
+@inject NavigationManager Navigation
+@inject IUserProvider userProvider
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+@attribute [Authorize]
+
+<PageTitle>Edit user</PageTitle>
+
+<Breadcrumbs Items="items" />
+
+<MudPaper Elevation="1" Class="p-4">
+    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" Class="w-50 d-flex flex-column gap-3">
+        <MudTextField @bind-Value="@User.Id" Label="Id" Variant="Variant.Text"
+                      ReadOnly="true" Disabled="true"></MudTextField>
+        <MudTextField @bind-Value="@User.FirstName" Label="First Name" Variant="Variant.Text"
+                      Required="true"
+                      RequiredError="First name is required!"></MudTextField>
+        <MudTextField @bind-Value="@User.LastName" Label="Last Name" Variant="Variant.Text"
+                      Required="true"
+                      RequiredError="Last name is required!"></MudTextField>
+        <MudTextField @bind-Value="@User.Email" Label="Email" Variant="Variant.Text" InputType="InputType.Email"
+                      Required="true"
+                      RequiredError="Email is required!"
+                      Validation="@(new EmailAddressAttribute() { ErrorMessage = "The email address is invalid" })"></MudTextField>
+        <MudTextField @bind-Value="@User.UserName" Label="User Name" Variant="Variant.Text"
+                      ReadOnly="true" Disabled="true"></MudTextField>
+        <div class="mt-4">
+            <MudButton Disabled="@(!success)" StartIcon="@Icons.Material.Filled.Save" Variant="Variant.Filled" OnClick="OnUpdateClicked" Class="ml-auto">Update</MudButton>
+            <MudButton StartIcon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Error" OnClick="DeleteUserAsync" Class="ml-auto">Delete</MudButton>
+        </div>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+
+    private MudForm form = new MudForm();
+    private bool success;
+    private string[] errors = { };
+    private User User { get; set; } = new();
+
+    private List<BreadcrumbItem> items = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.User = await this.userProvider.GetByIdAsync(this.Id.ToString(), this.Token);
+        this.items = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Users", href: "/users"),
+            new BreadcrumbItem($"Edit {this.User.UserName}" , href: null, disabled: true),
+        };
+    }
+
+    private async Task OnUpdateClicked()
+    {
+        await this.userProvider.UpdateAsync(this.User, this.Token);
+        Snackbar.Add("User has been updated successfully", Severity.Success);
+    }
+
+    private Task DeleteUserAsync()
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"Do you really want to delete {this.User.FirstName} {this.User.LastName}?" },
+            { x => x.Confirm, async () =>
+                {
+                    await this.userProvider.DeleteAsync(this.User.Id, this.Token);
+                    this.Navigation.NavigateTo("/users");
+                }
+            },
+        };
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        return DialogService.ShowAsync<ConfirmDialog>("Delete", parameters, options);
+    }
+}

@@ -1,0 +1,9 @@
+﻿@page "/error/{Code:int}"
+
+error
+
+@Code
+@code {
+    [Parameter]
+    public int Code { get; set; }
+}

@@ -1,0 +1,105 @@
+﻿@page "/users"
+@inherits CancellableComponent;
+
+@using SSAdminDashboard.Domain.Users
+
+@inject NavigationManager Navigation
+@inject IUserProvider userProvider
+@inject IDialogService DialogService
+
+@attribute [Authorize]
+
+<PageTitle>Users</PageTitle>
+
+<Breadcrumbs Items="items" />
+
+<div class="d-flex flex-column gap-4 mt-4">
+
+    <MudTable @ref="@table" Items="@UserList" Hover="true">
+        <ToolBarContent>
+            <MudTextField @bind-Value="Term" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" OnBlur="GetUsers"></MudTextField>
+            <MudSpacer />
+            <MudIconButton Icon="@Icons.Material.Filled.Print"></MudIconButton>
+            <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="OnAddNewUserClicked"></MudIconButton>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh>Nr</MudTh>
+            <MudTh>First Name</MudTh>
+            <MudTh>Last Name</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>User Name</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Nr">@context.Id</MudTd>
+            <MudTd DataLabel="First Name">@context.FirstName</MudTd>
+            <MudTd DataLabel="Last Name">@context.LastName</MudTd>
+            <MudTd DataLabel="Email">@context.Email</MudTd>
+            <MudTd DataLabel="User Name">@context.UserName</MudTd>
+            <MudTd DataLabel="">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" aria-label="delete" OnClick="@(() => Navigation.NavigateTo($"/users/{context.Id}"))"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" aria-label="delete" OnClick="@(() => DeleteUserAsync(context))"></MudIconButton>
+            </MudTd>
+
+        </RowTemplate>
+        <PagerContent>
+            <div class="py-4 border-top">
+                <MudPagination ShowFirstButton="true" ShowLastButton="true" Count="@((int)Math.Ceiling((decimal)this.TotalCount / (decimal)this.Take))" SelectedChanged="PageChangeAsync" />
+            </div>
+        </PagerContent>
+    </MudTable>
+</div>
+@code {
+    private MudTable<User> table = new();
+
+    protected List<User> UserList { get; set; } = new();
+    protected int TotalCount { get; set; } = 0;
+    protected int Take { get; set; } = 10;
+    protected int Skip { get; set; } = 0;
+    protected string Term { get; set; } = string.Empty;
+
+    private List<BreadcrumbItem> items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Users", href: null, disabled: true)
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await this.GetUsers();
+    }
+
+    protected void OnAddNewUserClicked()
+    {
+        this.Navigation.NavigateTo("/users/new");
+    }
+
+    private async Task PageChangeAsync(int page)
+    {
+        this.Skip = (page - 1) * this.Take;
+        await this.GetUsers();
+    }
+
+    private async Task GetUsers()
+    {
+        this.TotalCount = await this.userProvider.GetCountAsync(this.Term, this.Token);
+        this.UserList = await this.userProvider.GetAllUsersAsync(this.Take, this.Skip, this.Term, this.Token);
+    }
+
+    private Task DeleteUserAsync(User user)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"Do you really want to delete {user.FirstName} {user.LastName}?" },
+            { x => x.Confirm, async () =>
+                {
+                    await this.userProvider.DeleteAsync(user.Id, this.Token);
+                    await this.GetUsers();
+                }
+            },
+        };
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        return DialogService.ShowAsync<ConfirmDialog>("Delete", parameters, options);
+    }
+}

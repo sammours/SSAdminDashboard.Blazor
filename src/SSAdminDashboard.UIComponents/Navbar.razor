@@ -1,0 +1,18 @@
+﻿@inject IUserService UserService
+<MudAppBar Elevation="3" Color="Color.Dark">
+    <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Info" Edge="Edge.Start" OnClick="ToggleDrawer" />
+        <MudImage Src="/images/logo-small.png" Alt="Logo" Height="30" />
+    </MudHidden>
+    <MudHidden Breakpoint="Breakpoint.SmAndUp" Invert="true">
+        <MudImage Src="/images/logo.png" Alt="Logo" Height="30" />
+    </MudHidden>
+    <MudSpacer />
+
+    <MudText Typo="Typo.subtitle1">@UserService.GetUserName() (@UserService.GetRole().ToString())</MudText>
+</MudAppBar>
+
+
+@code {
+    [Parameter] public Action ToggleDrawer { get; set; } = () => { };
+}

@@ -1,0 +1,134 @@
+﻿@page "/products"
+@inherits CancellableComponent;
+
+@using SSAdminDashboard.Domain.Products
+@using System.Linq.Expressions
+
+@inject IProductRepository repository
+
+@attribute [Authorize]
+
+<PageTitle>Products</PageTitle>
+
+<Breadcrumbs Items="breadcrumbs" />
+
+<MudTable ServerData="ServerReload" Dense="true" Hover="true" @ref="table">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Products</MudText>
+        <MudSpacer />
+        <MudTextField T="string" ValueChanged="@(s => OnSearch(s))" Placeholder="Name / Description / Manufacturer / Price" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="information" T="Product">Information</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="price" T="Product">Price</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="quantity" T="Product">StockQuantity</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="manufacturer" T="Product">Manufacturer</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="rating" T="Product">Rating</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            <MudCarousel Class="mud-width-full" Style="height:200px;" ShowArrows="true" ShowBullets="true" EnableSwipeGesture="true" AutoCycle="false" TData="object"
+                         BulletsColor="Color.Primary">
+                @foreach (var image in context.Images)
+                {
+                    <MudCarouselItem Transition="Transition.Slide">
+                        <MudImage Src="@image" Alt="@image" Elevation="25" ObjectFit="ObjectFit.Cover" />
+                    </MudCarouselItem>
+                }
+            </MudCarousel>
+        </MudTd>
+        <MudTd DataLabel="information">
+            <MudStack Row="false">
+                <MudLink Href="@($"/products/{context.Id}")">
+                    <MudText Typo="Typo.body1">@context.Name</MudText>
+                </MudLink>
+                <MudText Typo="Typo.body1">@context.DescriptionBrief()</MudText>
+            </MudStack>
+        </MudTd>
+        <MudTd DataLabel="price">
+            <MudStack Row="true">
+                <MudText Typo="Typo.body1" Color="Color.Warning" Class="text-decoration-line-through">@context.Price</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Success">@context.FinalPrice()</MudText>
+            </MudStack>
+            <MudText Typo="Typo.body1">Discount @context.Discount %</MudText>
+        </MudTd>
+        <MudTd DataLabel="quantity">@context.StockQuantity</MudTd>
+        <MudTd DataLabel="manufacturer">@context.Manufacturer</MudTd>
+        <MudTd DataLabel="rating">
+            <MudStack Row>
+                <MudRating Size="@Size.Small" SelectedValue="@context.Rating" />
+            </MudStack>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No matching records found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private MudTable<Product> table = new();
+
+    private QueryOptions<Product> Options = new()
+    {
+        Take = 10,
+        Skip = 0
+    };
+
+    private Expression<Func<Product, bool>>? filter = null;
+
+    private List<BreadcrumbItem> breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Products", href: null, disabled: true)
+    };
+
+    private void OnSearch(string text)
+    {
+        decimal.TryParse(text, out var value);
+        this.filter = !string.IsNullOrEmpty(text) 
+            ? (x) => x.Name.Contains(text, StringComparison.OrdinalIgnoreCase) || x.Description.Contains(text, StringComparison.OrdinalIgnoreCase) ||
+            x.Manufacturer.Contains(text, StringComparison.OrdinalIgnoreCase) || x.Price == value
+            : null;
+
+        this.table.ReloadServerData();
+    }
+
+    private async Task<TableData<Product>> ServerReload(TableState state, CancellationToken token)
+    {
+        var totalCount = await this.repository.CountAsync(cancellationToken: token);
+        this.Options.OrderDirection = state.SortDirection == SortDirection.Ascending ? OrderDirection.Ascending : OrderDirection.Descending;
+        switch (state.SortLabel)
+        {
+            case "information":
+            default:
+                this.Options.Order = (x) => x.Name;
+                break;
+            case "price":
+                this.Options.Order = (x) => x.Price;
+                break;
+            case "quantity":
+                this.Options.Order = (x) => x.StockQuantity;
+                break;
+            case "manufacturer":
+                this.Options.Order = (x) => x.Manufacturer;
+                break;
+            case "rating":
+                this.Options.Order = (x) => x.Rating;
+                break;
+        }
+
+        this.Options.Take = state.PageSize;
+        this.Options.Skip = state.Page * this.Options.Take;
+
+        var productList = (await this.repository.GetAsync(expression: this.filter, options: this.Options, token)).ToList();
+
+        return new TableData<Product>() { TotalItems = totalCount, Items = productList };
+    }
+}

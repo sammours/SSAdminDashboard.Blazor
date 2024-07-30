@@ -1,0 +1,32 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+
+<PageTitle>Dashboard</PageTitle>
+
+<MudThemeProvider Theme="MainTheme.GenerateLightTheme()" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <Navbar ToggleDrawer="ToggleDrawer" />
+
+    <MudDrawer @bind-Open="sidebarOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
+        <Sidebar />
+    </MudDrawer>
+
+    <MudMainContent Class="py-16 px-8" Style="@($"background:{Colors.Gray.Lighten5};min-height:100vh")">
+        <MudContainer>
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool sidebarOpen = true;
+
+    public void ToggleDrawer()
+    {
+        this.sidebarOpen = !this.sidebarOpen;
+    }
+}

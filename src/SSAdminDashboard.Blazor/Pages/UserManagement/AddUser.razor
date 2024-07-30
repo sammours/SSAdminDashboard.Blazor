@@ -1,0 +1,55 @@
+﻿@page "/users/new"
+@inherits CancellableComponent;
+
+@using SSAdminDashboard.Domain.Users
+
+@inject NavigationManager Navigation
+@inject IUserProvider userProvider
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Add user</PageTitle>
+
+<Breadcrumbs Items="items" />
+
+<MudPaper Elevation="1" Class="p-4" >
+    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" Class="w-50 d-flex flex-column gap-3">
+        <MudTextField @bind-Value="@User.FirstName" Label="First Name" Variant="Variant.Text"
+                        Required="true"
+                        RequiredError="First name is required!"></MudTextField>
+        <MudTextField @bind-Value="@User.LastName" Label="Last Name" Variant="Variant.Text"
+                        Required="true"
+                        RequiredError="Last name is required!"></MudTextField>
+        <MudTextField @bind-Value="@User.Email" Label="Email" Variant="Variant.Text" InputType="InputType.Email"
+                        Required="true"
+                        RequiredError="Email is required!"
+                        Validation="@(new EmailAddressAttribute() { ErrorMessage = "The email address is invalid" })"></MudTextField>
+        <MudTextField @bind-Value="@User.UserName" Label="User Name" Variant="Variant.Text"
+                        Required="true"
+                        RequiredError="User name is required!"></MudTextField>
+        <div class="mt-4">
+            <MudButton Disabled="@(!success)" StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" OnClick="OnAddClicked" Class="ml-auto">Insert</MudButton>
+        </div>
+    </MudForm>
+</MudPaper>
+
+@code {
+
+    private MudForm form = new MudForm();
+    private bool success;
+    private string[] errors = { };
+    private User User { get; set; } = new();
+
+    private List<BreadcrumbItem> items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Users", href: "/users"),
+        new BreadcrumbItem("Add new user", href: null, disabled: true),
+    };
+
+    private async Task OnAddClicked()
+    {
+        await this.userProvider.InsertAsync(this.User, this.Token);
+        Snackbar.Add("User has been added successfully", Severity.Success);
+        this.User = new();
+    }
+}

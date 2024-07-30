@@ -1,0 +1,120 @@
+﻿@page "/products/{id:long}"
+
+@inherits CancellableComponent;
+
+@using SSAdminDashboard.Domain.Products
+
+@inject IProductRepository repository
+@inject ISnackbar snackbar
+
+@attribute [Authorize]
+
+<PageTitle>Products</PageTitle>
+
+<Breadcrumbs Items="items" />
+
+<MudGrid>
+    <MudItem xs="4">
+        <MudCarousel Class="mud-width-full" ShowArrows="true" Style="height: 300px;" ShowBullets="true" EnableSwipeGesture="true" AutoCycle="false" TData="object"
+                     BulletsColor="Color.Primary">
+            @foreach (var image in product.Images)
+            {
+                <MudCarouselItem Transition="Transition.Slide">
+                    <MudImage Src="@image" Alt="@image" Elevation="25" ObjectFit="ObjectFit.Cover" Style="height: 100%" />
+                </MudCarouselItem>
+            }
+        </MudCarousel>
+    </MudItem>
+    <MudItem xs="8">
+        <MudPaper Class="p-4">
+            <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+
+                <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" Class="mt-5" Label="Name" InputType="InputType.Text" @bind-Value="product.Name" For="@(() => product.Name)" />
+                <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" Class="mt-5" Label="Description" InputType="InputType.Text" Lines="5" @bind-Value="product.Description" For="@(() => product.Description)" />
+                <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" Class="mt-5" Label="Manufacturer" InputType="InputType.Text" @bind-Value="product.Manufacturer" For="@(() => product.Manufacturer)" />
+                <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" Class="mt-5" Label="Material" InputType="InputType.Text" @bind-Value="product.Material" For="@(() => product.Material)" />
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-5">
+                    <MudTextField Margin="Margin.Dense" @bind-Value="product.ManufactureDate" Format="dd/MM/yyyy" Class="mt-5" Label="Last Update" Variant="Variant.Outlined" For="@(() => product.ManufactureDate)" />
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" Class="mt-5" Label="Stock Quantity" InputType="InputType.Number" @bind-Value="product.StockQuantity" For="@(() => product.StockQuantity)" />
+                    <MudRating Class="mt-3" Size="@Size.Small" @bind-SelectedValue="@product.Rating" />
+                </MudStack>
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-5">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" InputType="InputType.Number" @bind-Value="product.Price" For="@(() => product.Price)" />
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" InputType="InputType.Number" @bind-Value="product.Discount" For="@(() => product.Discount)" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Percent" />
+                    <MudText Typo="Typo.body1">Final price:  @product.FinalPrice()</MudText>
+                </MudStack>
+
+                <MudStack Row Justify="Justify.Center" Style="width: 100%" Wrap="Wrap.Wrap">
+                    <MudChipSet T="string" @bind-SelectedValue="category" SelectionMode="SelectionMode.SingleSelection" Color="Color.Default" SelectedColor="Color.Primary" Variant="Variant.Text">
+                        <MudChip Text="@ProductCategories.Electronics.ToString()" Icon="@Icons.Material.Filled.DevicesOther" />
+                        <MudChip Text="@ProductCategories.Clothing.ToString()" Icon="@Icons.Material.Filled.ShoppingCart" />
+                        <MudChip Text="@ProductCategories.Food.ToString()" Icon="@Icons.Material.Filled.Fastfood" />
+                        <MudChip Text="@ProductCategories.Furniture.ToString()" Icon="@Icons.Material.Filled.Chair" />
+                        <MudChip Text="@ProductCategories.Toys.ToString()" Icon="@Icons.Material.Filled.Toys" />
+                        <MudChip Text="@ProductCategories.Books.ToString()" Icon="@Icons.Material.Filled.MenuBook" />
+                        <MudChip Text="@ProductCategories.Health.ToString()" Icon="@Icons.Material.Filled.HeartBroken" />
+                        <MudChip Text="@ProductCategories.Beauty.ToString()" Icon="@Icons.Material.Filled.Face2" />
+                        <MudChip Text="@ProductCategories.Sports.ToString()" Icon="@Icons.Material.Filled.Sports" />
+                        <MudChip Text="@ProductCategories.Automotive.ToString()" Icon="@Icons.Material.Filled.DirectionsCar" />
+                    </MudChipSet>
+                </MudStack>
+
+                <div class="d-flex align-center justify-space-between mt-5">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto"
+                               OnClick="@(async () => await Submit())">Save</MudButton>
+                </div>
+            </MudForm>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+    private DateTime date = DateTime.Now;
+
+    private Product product = new();
+    private List<BreadcrumbItem> items = new();
+
+    private bool success = false;
+    private string[] errors = { };
+
+    private string category = string.Empty;
+
+    private MudForm form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.product = (await this.repository.GetByIdAsync(this.Id, this.Token)) ?? throw new ArgumentException("Product not found");
+        this.category = this.product.Category.ToString();
+        this.items = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Products", href: "/products"),
+            new BreadcrumbItem($"Preview {this.product.Name}" , href: null, disabled: true),
+        };
+    }
+
+    private Color GetCategoryColor(ProductCategories category)
+        => this.product.Category == category ? Color.Primary : Color.Default;
+
+    private async Task Submit()
+    {
+        await form.Validate();
+
+        if (form.IsValid)
+        {
+            this.product.Category = Enum.Parse<ProductCategories>(this.category);
+            await this.repository.UpdateAsync(this.product, this.Token);
+            this.snackbar.Add("Product has been saved successfully", Severity.Success);
+        }
+    }
+
+    private void OnValidSubmit(EditContext context)
+    {
+        this.success = true;
+        StateHasChanged();
+    }
+}

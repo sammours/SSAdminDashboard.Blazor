@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <AssemblyName>SSAdminDashboard.Blazor</AssemblyName>
+    <RootNamespace>SSAdminDashboard.Blazor</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SSAdminDashboard.Domain\SSAdminDashboard.Domain.csproj" />
+    <ProjectReference Include="..\SSAdminDashboard.Infrastructure\SSAdminDashboard.Infrastructure.csproj" />
+    <ProjectReference Include="..\SSAdminDashboard.UIComponents\SSAdminDashboard.UIComponents.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\images\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.7" />
+    <PackageReference Include="MudBlazor" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
+  </ItemGroup>
+
+</Project>
