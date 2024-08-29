@@ -8,6 +8,13 @@ public static class ProductFaker
 {
     public static List<Product> Create(int count = 100)
     {
+        var commentFaker = new Faker<ProductComment>()
+            .RuleFor(p => p.Name, f => f.Person.FullName)
+            .RuleFor(p => p.Avatar, f => f.Person.Avatar)
+            .RuleFor(p => p.Description, f => f.Lorem.Sentences(5))
+            .RuleFor(p => p.Rating, f => f.Random.Number(min: 1, max: 5))
+            .RuleFor(p => p.Date, f => f.Date.Past());
+
         var faker = new Faker<Product>()
             .RuleFor(p => p.Name, f => f.Commerce.ProductName())
             .RuleFor(p => p.Price, f => decimal.Parse(f.Commerce.Price()))
@@ -20,7 +27,8 @@ public static class ProductFaker
             .RuleFor(p => p.Rating, f => f.Random.Number(min: 1, max: 5))
             .RuleFor(p => p.ManufactureDate, f => f.Date.Past())
             .RuleFor(p => p.Images, f => Enumerable.Range(0, 3).Select(x => f.Image.LoremFlickrUrl(keywords: "device")).ToList())
-            .RuleFor(p => p.Barcode, f => f.Commerce.Ean13());
+            .RuleFor(p => p.Barcode, f => f.Commerce.Ean13())
+            .RuleFor(p => p.Comments, f => commentFaker.Generate(10));
 
         return faker.Generate(count);
     }

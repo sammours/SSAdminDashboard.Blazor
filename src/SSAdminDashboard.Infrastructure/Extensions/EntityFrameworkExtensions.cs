@@ -47,4 +47,22 @@ public static partial class EntityFrameworkExtensions
 
         return source.Where(expression);
     }
+
+    public static IQueryable<T> WhereIf<T>(
+        this IQueryable<T> source,
+        List<Expression<Func<T, bool>>>? expressions)
+        where T : class, IEntity
+    {
+        if (expressions == null)
+        {
+            return source;
+        }
+
+        foreach(var expression in expressions)
+        {
+            source = source.Where(expression);
+        }
+
+        return source;
+    }
 }

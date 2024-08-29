@@ -1,6 +1,8 @@
 ﻿namespace SSAdminDashboard.Infrastructure;
 
 using Microsoft.Extensions.DependencyInjection;
+using SSAdminDashboard.Domain.Mails;
+using SSAdminDashboard.Domain.Orders;
 using SSAdminDashboard.Domain.Products;
 using SSAdminDashboard.Domain.Users;
 using SSAdminDashboard.Infrastructure.Faker;
@@ -23,6 +25,8 @@ public static class ServiceRegistrations
     {
         services.AddScoped<IUserProvider, UserProvider>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IMailRepository, MailRepository>();
         return services;
     }
 }

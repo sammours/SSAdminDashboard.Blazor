@@ -1,7 +1,6 @@
 ﻿namespace SSAdminDashboard.Domain;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using SSAdminDashboard.Infrastructure;
 using SSAdminDashboard.Infrastructure.Extensions;
 using System.Linq.Expressions;
@@ -17,13 +16,30 @@ public abstract class Repository<TEntity>(AdDbContext dbContext) : IRepository<T
             .ApplyQueryOptions(options)
             .ToListAsync(cancellationToken ?? CancellationToken.None);
 
+    public async Task<IEnumerable<TEntity>> GetAsync(List<Expression<Func<TEntity, bool>>>? expressions = null, QueryOptions<TEntity>? options = null, CancellationToken? cancellationToken = null)
+         => await this.DbContext.Set<TEntity>()
+            .WhereIf(expressions)
+            .ApplyQueryOptions(options)
+            .ToListAsync(cancellationToken ?? CancellationToken.None);
+
     public async Task<int> CountAsync(Expression<Func<TEntity, bool>>? expression = null, CancellationToken? cancellationToken = null)
          => await this.DbContext.Set<TEntity>()
             .WhereIf(expression)
             .CountAsync(cancellationToken ?? CancellationToken.None);
 
+    public async Task<int> CountAsync(List<Expression<Func<TEntity, bool>>>? expressions = null, CancellationToken? cancellationToken = null)
+         => await this.DbContext.Set<TEntity>()
+            .WhereIf(expressions)
+            .CountAsync(cancellationToken ?? CancellationToken.None);
+
     public async Task<TEntity?> GetByIdAsync(long id, CancellationToken cancellationToken)
         => await this.DbContext.Set<TEntity>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public async Task<TEntity?> GetByIdAsync(Expression<Func<TEntity, bool>>? expression = null, QueryOptions<TEntity>? options = null, CancellationToken? cancellationToken = null)
+        => await this.DbContext.Set<TEntity>()
+            .WhereIf(expression)
+            .ApplyQueryOptions(options)
+            .FirstOrDefaultAsync(cancellationToken ?? CancellationToken.None);
 
     public async Task<TEntity> InsertAsync(TEntity entity, CancellationToken cancellationToken)
     {

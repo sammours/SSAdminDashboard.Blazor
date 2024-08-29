@@ -67,6 +67,34 @@
                 </div>
             </MudForm>
         </MudPaper>
+
+        @foreach(var comment in product.Comments)
+        {
+            <MudCard Elevation="0" Outlined="true" Class="my-2" Style="@($"background:{Colors.Shades.Transparent};")">
+                <MudCardHeader>
+                    <CardHeaderAvatar>
+                        <MudAvatar Color="Color.Secondary">
+                            <MudImage Src="@comment.Avatar"></MudImage>
+                        </MudAvatar>
+                    </CardHeaderAvatar>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.body1">@comment.Name</MudText>
+                        <MudText Typo="Typo.body2">@($"{comment.Date:dd.MM.yyyy}")</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete">Delete</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Block">Block user</MudMenuItem>
+                        </MudMenu>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.body2">@comment.Description</MudText>
+                    <MudRating Class="mt-3" Size="@Size.Small" @bind-SelectedValue="@comment.Rating" />
+                </MudCardContent>
+            </MudCard>
+        }
     </MudItem>
 </MudGrid>
 
@@ -88,7 +116,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        this.product = (await this.repository.GetByIdAsync(this.Id, this.Token)) ?? throw new ArgumentException("Product not found");
+        var options = new QueryOptions<Product>
+        {
+            Include = (x) => x.Comments
+        };
+
+        this.product = (await this.repository.GetByIdAsync(x => x.Id == this.Id, options, this.Token)) ?? throw new ArgumentException("Product not found");
         this.category = this.product.Category.ToString();
         this.items = new List<BreadcrumbItem>
         {

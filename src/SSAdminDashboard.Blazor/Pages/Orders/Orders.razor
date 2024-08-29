@@ -1,0 +1,155 @@
+﻿@page "/orders"
+@inherits CancellableComponent;
+
+@using SSAdminDashboard.Domain.Orders
+@using SSAdminDashboard.Domain.Extensions
+@using System.Linq.Expressions
+
+@inject IOrderRepository repository
+@inject NavigationManager navigation
+
+@attribute [Authorize]
+
+<PageTitle>Orders</PageTitle>
+
+<Breadcrumbs Items="breadcrumbs" />
+
+<MudDataGrid @ref="dataGrid" T="Order" ServerData="ServerReload" Filterable="true" FilterMode="DataGridFilterMode.ColumnFilterRow"
+    FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Orders</MudText>
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Property="x => x.Id" Title="Id" Filterable="true" Sortable="true" />
+        <PropertyColumn Format="dd.MM.yyyy" Property="x => x.Date" Title="Date" Filterable="true" Sortable="false">
+            <FilterTemplate>
+                <MudDatePicker Editable="true" Clearable="true" Date="date" ShowToolbar="false" DateFormat="dd.MM.yyyy" DateChanged="OnDateChanged" />
+            </FilterTemplate>
+        </PropertyColumn>
+        <PropertyColumn Property="x => x.CustomerName" Title="Customer" Filterable="true" Sortable="true" />
+        <PropertyColumn Property="x => x.OrderStatus" Title="Status" Filterable="true" Sortable="false" />
+        <PropertyColumn Property="x => x.TotalAmount" Title="Price" Filterable="true" Sortable="true" />
+        <TemplateColumn>
+            <CellTemplate>
+                <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Outlined.Edit" OnClick="@(() => OnEditClicked(context.Item.Id))" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="Order" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private MudDataGrid<Order> dataGrid = new();
+    private DateTime? date = null;
+
+    private List<BreadcrumbItem> breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Orders", href: null, disabled: true)
+    };
+
+    private void OnDateChanged(DateTime? value)
+    {
+        this.date = value;
+        this.dataGrid.ReloadServerData();
+    }
+
+    private async Task<GridData<Order>> ServerReload(GridState<Order> state)
+    {
+        var options = new QueryOptions<Order>()
+            {
+                Take = 10,
+                Skip = 0,
+                Include = (x) => x.Items
+            };
+        options.Take = state.PageSize;
+        options.Skip = state.Page * options.Take;
+
+        this.Sort(options, state.SortDefinitions?.FirstOrDefault());
+
+        var filter = this.Filter(state.FilterDefinitions?.ToList());
+        var totalCount = await this.repository.CountAsync(filter, cancellationToken: this.Token);
+        var orderList = (await this.repository.GetAsync(expressions: filter, options: options, this.Token)).ToList();
+
+        return new GridData
+    <Order>() { TotalItems = totalCount, Items = orderList };
+    }
+
+    private void OnEditClicked(long id)
+    {
+        this.navigation.NavigateTo($"/orders/{id}");
+    }
+
+    private List<Expression<Func<Order, bool>>>? Filter(List<IFilterDefinition<Order>>? filterDefinitions)
+    {
+        if (filterDefinitions is null)
+        {
+            return null;
+        }
+
+        List<Expression<Func<Order, bool>>> filters = new List<Expression<Func<Order, bool>>>();
+        foreach (var filterDef in filterDefinitions)
+        {
+            if (filterDef.Title != null && filterDef.Value != null)
+            {
+                var value = filterDef.Value.ToString() ?? string.Empty;
+                switch (filterDef.Title.ToLower())
+                {
+                    case "id":
+                        long id = 0;
+                        long.TryParse(value, out id);
+                        filters.Add((x) => x.Id == id);
+                        break;
+                    case "customer":
+                    default:
+                        filters.Add((x) => x.CustomerName.Contains(value, StringComparison.OrdinalIgnoreCase));
+                        break;
+                    case "price":
+                        decimal.TryParse(value, out var price);
+                        filters.Add((x) => x.TotalAmount == price);
+                        break;
+                    case "status":
+                        Enum.TryParse<OrderStatus>(value, true, out var status);
+                        filters.Add((x) => x.OrderStatus == status);
+                        break;
+                }
+            }
+        }
+
+        if (this.date is not null)
+        {
+            filters.Add((x) => x.Date.Date == this.date.Value.Date);
+        }
+
+        return filters;
+    }
+
+    private void Sort(QueryOptions<Order> options, SortDefinition<Order>? sortDefinition)
+    {
+        if (sortDefinition is null)
+        {
+            options.Order = (x) => x.Id;
+            options.OrderDirection = OrderDirection.Ascending;
+            return;
+        }
+
+        options.OrderDirection = !sortDefinition.Descending ? OrderDirection.Ascending : OrderDirection.Descending;
+        switch (sortDefinition.SortBy.ToLower())
+        {
+            case "id":
+                options.Order = (x) => x.Id;
+                break;
+            case "customer":
+            default:
+                options.Order = (x) => x.CustomerName;
+                break;
+            case "itemcount":
+                options.Order = (x) => x.Items.Count;
+                break;
+            case "totalcmount":
+                options.Order = (x) => x.TotalAmount;
+                break;
+        }
+    }
+}

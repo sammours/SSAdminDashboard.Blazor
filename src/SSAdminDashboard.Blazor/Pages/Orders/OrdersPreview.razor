@@ -1,0 +1,124 @@
+﻿@page "/orders/{id:long}"
+@inherits CancellableComponent;
+
+@using SSAdminDashboard.Domain.Orders
+
+@inject IOrderRepository repository
+@inject ISnackbar snackbar
+
+@attribute [Authorize]
+
+<PageTitle>Order preview</PageTitle>
+
+<Breadcrumbs Items="items" />
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h5">
+        Billing & Delivery information
+        @if(order.OrderStatus == OrderStatus.New)
+        {
+            <MudChip T="string" Color="Color.Default">New</MudChip>
+        }
+        else if(order.OrderStatus == OrderStatus.InProgress)
+        {
+            <MudChip T="string" Color="Color.Info">In Progress</MudChip>
+        }
+        else if(order.OrderStatus == OrderStatus.Closed)
+        {
+            <MudChip T="string" Color="Color.Success">Closed</MudChip>
+        }
+        else if(order.OrderStatus == OrderStatus.Cancelled)
+        {
+            <MudChip T="string" Color="Color.Error">Cancelled</MudChip>
+        }
+    </MudText>
+
+    <MudGrid>
+        <MudItem xs="12" Class="my-4">
+            <MudText Typo="Typo.body1">Order Id</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Primary" Class="mb-2">@order.Id</MudText>
+
+            <MudText Typo="Typo.body1">Date</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Primary" Class="mb-2">@($"{order.Date:dd.MM.yyyy}")</MudText>
+
+            <MudText Typo="Typo.body1">Customer name</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Primary" Class="mb-2">@order.CustomerName</MudText>
+
+            <MudText Typo="Typo.body1">Shipping address</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Primary" Class="mb-2">@order.ShippingAddress</MudText>
+
+            <MudText Typo="Typo.body1">Billing address</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Primary">@order.BillingAddress</MudText>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="@order.Items" Breakpoint="Breakpoint.Sm" Dense="true">
+        <HeaderContent>
+            <MudTh>Product name</MudTh>
+            <MudTh>Quantity</MudTh>
+            <MudTh>Price</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.ProductName</MudTd>
+            <MudTd>@context.Quantity</MudTd>
+            <MudTd>@context.Price</MudTd>
+        </RowTemplate>
+        <FooterContent>
+            <MudTd></MudTd>
+            <MudTd><MudText Typo="Typo.subtitle2">Total price (19% VAT)</MudText></MudTd>
+            <MudTd>@(finalPrice + (finalPrice * (decimal)0.19))</MudTd>
+        </FooterContent>
+        <NoRecordsContent>
+            <MudText>No matching records found</MudText>
+        </NoRecordsContent>
+    </MudTable>
+
+    <MudGrid>
+        <MudItem xs="12" Class="d-flex justify-end mt-4">
+            <div>
+                <MudButton Variant="Variant.Filled" Color="Color.Error" Disabled="@(order.OrderStatus == OrderStatus.Cancelled)"
+                            Class="mr-5"
+                           OnClick="@(async () => await ChangeStatusAsync(OrderStatus.Cancelled))">Cancel</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Success" Disabled="@(order.OrderStatus == OrderStatus.Closed)"
+                           Class="ml-auto" OnClick="@(async () => await ChangeStatusAsync(OrderStatus.Closed))">Save</MudButton>
+            </div>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+    private Order order = new();
+    private List<BreadcrumbItem> items = new();
+
+    private decimal finalPrice = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var options = new QueryOptions<Order>
+            {
+                Include = (x) => x.Items
+            };
+
+        this.order = (await this.repository.GetByIdAsync(x => x.Id == this.Id, options, this.Token)) ?? throw new ArgumentException("Order not found");
+        this.items = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Orders", href: "/orders"),
+            new BreadcrumbItem($"Preview Order: {this.order.Id}" , href: null, disabled: true),
+        };
+
+        this.finalPrice = this.order.Items.Sum(x => x.Price);
+    }
+
+    private async Task ChangeStatusAsync(OrderStatus status)
+    {
+        this.order.OrderStatus = status;
+        await this.repository.UpdateAsync(this.order, this.Token);
+        var message = status == OrderStatus.Closed
+            ? "Order has been closed"
+            : "Order has been cancelled";
+        this.snackbar.Add(message, Severity.Success);
+    }
+}

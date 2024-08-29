@@ -102,7 +102,7 @@
 
     private async Task<TableData<Product>> ServerReload(TableState state, CancellationToken token)
     {
-        var totalCount = await this.repository.CountAsync(cancellationToken: token);
+        var totalCount = await this.repository.CountAsync(expression: null, cancellationToken: token);
         this.Options.OrderDirection = state.SortDirection == SortDirection.Ascending ? OrderDirection.Ascending : OrderDirection.Descending;
         switch (state.SortLabel)
         {

@@ -21,6 +21,7 @@ public class Product : IEntity
     public DateTime ManufactureDate { get; set; }
     public string Barcode { get; set; } = string.Empty;
     public List<string> Images { get; set; } = new();
+    public List<ProductComment> Comments { get; set; } = new();
 
     public decimal FinalPrice()
         => Math.Round(this.Price - ((this.Price * this.Discount) / 100), 2);

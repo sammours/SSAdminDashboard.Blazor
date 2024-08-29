@@ -1,5 +1,6 @@
 ﻿namespace SSAdminDashboard.Infrastructure.Repositories;
 
+using Microsoft.EntityFrameworkCore;
 using SSAdminDashboard.Domain;
 using SSAdminDashboard.Domain.Products;
 

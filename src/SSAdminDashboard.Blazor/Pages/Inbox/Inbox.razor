@@ -1,0 +1,104 @@
+﻿@page "/inbox"
+@inherits CancellableComponent;
+
+@using SSAdminDashboard.Domain.Mails
+
+@inject IMailRepository repository
+@inject NavigationManager navigation
+
+@attribute [Authorize]
+
+<PageTitle>Mails</PageTitle>
+
+<Breadcrumbs Items="breadcrumbs" />
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" sm="3" lg="2" Class="pt-0">
+        <MudSelect @bind-Value="currentFolder" Label="Current folder" Dense="true">
+            <MudSelectItem Value="@MailFolder.Inbox" />
+            <MudSelectItem Value="@MailFolder.Junk" />
+            <MudSelectItem Value="@MailFolder.Draft" />
+            <MudSelectItem Value="@MailFolder.Flagged" />
+        </MudSelect>
+    </MudItem>
+</MudGrid>
+
+<MudGrid>
+    <MudItem xs="12" sm="4" lg="3">
+        <MudList T="Mail" @bind-SelectedValue="selectedEmail">
+            @foreach (var mail in Mails.Where(x => x.Folder == currentFolder)
+                .OrderBy(x => x.Subject).Take(currentMailListSize))
+            {
+                <MudListItem Icon="@Icons.Material.Filled.Inbox" Value="@mail">
+                    <AvatarContent>
+                        <MudAvatar>
+                            <MudImage Src="@mail.Avatar" />
+                        </MudAvatar>
+                    </AvatarContent>
+                    <ChildContent>
+                        @mail.Subject.Truncate()
+                    </ChildContent>
+                </MudListItem>
+            }
+        </MudList>
+        <MudButton OnClick="(() => currentMailListSize += 10)" Variant="Variant.Text" Color="Color.Transparent">More...</MudButton>
+    </MudItem>
+    <MudItem xs="12" sm="8" lg="9">
+        @if (selectedEmail is not null)
+        {
+            <MudPaper>
+                <MudGrid Class="p-3">
+                    <MudItem xs="3" sm="1">
+                        <MudAvatar>
+                            <MudImage Src="@selectedEmail.Avatar" />
+                        </MudAvatar>
+                    </MudItem>
+                    <MudItem xs="9" sm="7">
+                        <MudText Typo="Typo.subtitle1">@selectedEmail.Subject</MudText>
+                        <MudText Typo="Typo.caption">
+                            @selectedEmail.Sender (@selectedEmail.From)
+                            <MudText Typo="Typo.caption" Style="@($"color:{Colors.Gray.Lighten1};")">
+                                @($"{selectedEmail.Date:dd.MM.yyyy}")
+                            </MudText>
+                        </MudText>
+                    </MudItem>
+                    <MudHidden Breakpoint="Breakpoint.Xs">
+                        <MudItem sm="4">
+                            <MudIconButton Class="float-end" Icon="@Icons.Material.Filled.Delete" Color="Color.Default" />
+                            <MudIconButton Class="float-end" Icon="@Icons.Material.Filled.Forward" Color="Color.Default" />
+                            <MudIconButton Class="float-end" Icon="@Icons.Material.Filled.Reply" Color="Color.Default" />
+                            <MudIconButton Class="float-end" Icon="@Icons.Material.Filled.ReplyAll" Color="Color.Default" />
+                        </MudItem>
+                    </MudHidden>
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.body2">@selectedEmail.Body</MudText>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField T="string" Label="Quick reply" Variant="Variant.Outlined" Lines="3" />
+                    </MudItem>
+                    <MudItem xs="12" Class="pt-2">
+                        <MudButton Class="float-end" Variant="Variant.Filled" Color="Color.Dark">Send</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+    private List<Mail> Mails = new();
+
+    private List<BreadcrumbItem> breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Inbox", href: null, disabled: true)
+    };
+
+    private MailFolder currentFolder = MailFolder.Inbox;
+    private Mail? selectedEmail;
+    private int currentMailListSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.Mails = (await this.repository.GetAsync(expression: null, options: null, cancellationToken: this.Token))?.ToList() ?? new();
+    }
+}
