@@ -1,0 +1,21 @@
+﻿@page "/dashboard"
+@inherits CancellableComponent;
+
+@inject NavigationManager navigation
+
+@attribute [Authorize]
+
+<PageTitle>Dashboard</PageTitle>
+
+<Breadcrumbs Items="breadcrumbs" />
+
+@code {
+    private List<BreadcrumbItem> breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", href: null, disabled: true)
+    };
+
+    // protected override async Task OnInitializedAsync()
+    // {
+    // }
+}

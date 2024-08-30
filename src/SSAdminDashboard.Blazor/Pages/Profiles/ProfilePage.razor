@@ -1,0 +1,87 @@
+﻿@page "/profile"
+@using SSAdminDashboard.Domain.Profiles
+@using SSAdminDashboard.Domain.Users
+@inherits CancellableComponent;
+
+@inject IUserService userService;
+@inject IProfileRepository repository;
+@inject IUserProvider userProvider;
+@inject ISnackbar snackbar
+
+@attribute [Authorize]
+
+<PageTitle>Profile</PageTitle>
+
+<Breadcrumbs Items="breadcrumbs" />
+
+<MudPaper class="p-4" Style="margin: 0 20%">
+    <div class="d-flex flex-column gap-4">
+        <div class="d-flex justify-content-center">
+            <MudAvatar Style="height:200px; width:200px;">
+                <MudImage Src="@Profile.Avatar" />
+            </MudAvatar>
+        </div>
+
+        <div class="d-flex justify-content-center">
+            <MudFileUpload T="IBrowserFile">
+                <ActivatorContent>
+                    <MudFab Color="Color.Dark"
+                            StartIcon="@Icons.Material.Filled.Image"
+                            Label="Upload picture" />
+                </ActivatorContent>
+            </MudFileUpload>
+        </div>
+
+        <MudTextField Class="disabled" InputType="InputType.Text" Value="@Profile.UserId" Label="User id" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" />
+        <MudTextField Class="disabled" InputType="InputType.Text" Value="@User.FirstName" Label="First name" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" />
+        <MudTextField Class="disabled" InputType="InputType.Text" Value="@User.LastName" Label="Last name" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" />
+        <MudTextField Class="disabled" InputType="InputType.Text" Value="@User.Email" Label="Email" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" />
+        <MudTextField Class="disabled" InputType="InputType.Text" Value="@User.UserName" Label="User name" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" />
+
+        <MudDatePicker Label="Date of birth" Date="@Profile.DateOfBirth" DateChanged="OnDateChange" DateFormat="dd.MM.yyyy" Margin="Margin.Dense" Variant="Variant.Outlined"></MudDatePicker>
+        <MudTextField InputType="InputType.Text" @bind-Value="@Profile.Position" Label="Position" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <MudCheckBox @bind-Value="Profile.IsBlocked" Color="Color.Primary" Label="Is blocked"></MudCheckBox>
+
+        <MudSelect @bind-Value="role" Label="Role" Variant="Variant.Outlined">
+            <MudSelectItem Value="@(UserRoles.Admin.ToString())" />
+            <MudSelectItem Value="@(UserRoles.User.ToString())" />
+        </MudSelect>
+
+        <div class="d-flex justify-content-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Dark" OnClick="UpdateAsync">Update</MudButton>
+        </div>
+    </div>
+</MudPaper>
+
+@code {
+    private Profile Profile = new();
+    private User User = new();
+    private string role = string.Empty;
+
+    private List<BreadcrumbItem> breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Profile", href: null, disabled: true)
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = this.userService.GetUserId();
+        (this.User, this.Profile) = await this.repository.GetByUserIdAsync(userId, this.Token);
+        this.role = this.Profile.Role.ToString();
+    }
+
+    private async Task UpdateAsync()
+    {
+        this.Profile.Role = role == UserRoles.Admin.ToString() ? UserRoles.Admin : UserRoles.User;
+        await this.repository.UpdateAsync(this.Profile, this.Token);
+        this.snackbar.Add("Profile has been saved successfully", Severity.Success);
+    }
+
+    private void OnDateChange(DateTime? newDate)
+    {
+        if (newDate is not null)
+        {
+            this.Profile.DateOfBirth = newDate.Value;
+        }
+    }
+}

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SSAdminDashboard.Domain.Mails;
 using SSAdminDashboard.Domain.Orders;
 using SSAdminDashboard.Domain.Products;
-using SSAdminDashboard.Domain.Users;
+using SSAdminDashboard.Domain.Profiles;
 
 public class AdDbContext : DbContext
 {
@@ -13,7 +13,7 @@ public class AdDbContext : DbContext
     public DbSet<Order> Orders { get; set; }
     public DbSet<Mail> Mails { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
-    public DbSet<User> Users { get; set; }
+    public DbSet<Profile> Profiles { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
